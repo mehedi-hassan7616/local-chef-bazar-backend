@@ -133,7 +133,6 @@ async function run() {
           });
         }
 
-        // Get user data from database
         const user = await usersCollection.findOne({ email });
 
         res.send({
