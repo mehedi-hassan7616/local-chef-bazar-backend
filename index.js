@@ -223,7 +223,6 @@ async function run() {
       const id = req.params.id;
       const updateData = req.body;
 
-      // Only admin can update user
       if (req.user.role !== "admin") {
         return res.status(403).send({ message: "Only admin can update user" });
       }
