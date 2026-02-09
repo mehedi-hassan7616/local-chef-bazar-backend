@@ -429,8 +429,8 @@ async function run() {
       if (!meal) {
         return res.status(404).send({ message: "Meal not found" });
       }
-
-      // Check ownership: chef can only update their own meals (using chefId field)
+      //chef can only update their own meals
+      // Check ownership:  (using chefId field)
       if (req.user.role !== "admin" && meal?.chefId !== req.user?.chefId) {
         return res
           .status(403)
