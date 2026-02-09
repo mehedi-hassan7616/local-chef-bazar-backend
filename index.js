@@ -380,8 +380,8 @@ async function run() {
         res.send(meal);
       },
     );
-
-    // Create new meal (Chef only - meal is automatically linked to the chef)
+    //  meal is automatically linked to the chef
+    // Create new meal (Chef only )
     app.post("/api/v1/meals", auth("chef"), async (req, res) => {
       const mealData = req.body;
 
