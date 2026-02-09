@@ -1,0 +1,1185 @@
+{
+	"info": {
+		"_postman_id": "d1cacf2b-e65c-4b75-962d-8224e2c3fe96",
+		"name": "LocalChefBazaar API",
+		"description": "API collection for LocalChefBazaar Server - A food ordering platform connecting users with local chefs.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "38345873",
+		"_collection_link": "https://www.postman.com/flexpoint-3075/workspace/ecommerce/collection/38345873-d1cacf2b-e65c-4b75-962d-8224e2c3fe96?action=share&source=collection_link&creator=38345873"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"item": [
+				{
+					"name": "Server Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								""
+							]
+						},
+						"description": "Check if the server is running"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const response = pm.response.json();",
+									"",
+									"if (response && response.accessToken) {",
+									"    pm.collectionVariables.set(\"authToken\", response.accessToken);",
+									"} else {",
+									"    console.error(\"Token not found in response body\");",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "// Customer credential\n{\n    \"email\": \"sakib@gmail.com\",\n    \"password\": \"Sakib@123\"\n}\n\n// Chef credential\n// {\n//     \"email\": \"chef@gmail.com\",\n//     \"password\": \"Chef@123\"\n// }\n\n// Admin credential\n// {\n//     \"email\": \"admin@gmail.com\",\n//     \"password\": \"Admin@123\"\n// }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get All Users (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users"
+							]
+						},
+						"description": "Get all users. Requires admin role."
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by Email",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/email/:email",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"email",
+								":email"
+							],
+							"variable": [
+								{
+									"key": "email",
+									"value": "sakib@gmail.com",
+									"description": "User email address"
+								}
+							]
+						},
+						"description": "Get user data by email. Users can only view their own profile. Admin can view any profile."
+					},
+					"response": []
+				},
+				{
+					"name": "Create User",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"user@example.com\",\n    \"name\": \"John Doe\",\n    \"photoURL\": \"https://i.ibb.co/sample-user.jpg\",\n    \"address\": \"House 12, Road 7, Mirpur DOHS, Dhaka\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users"
+							]
+						},
+						"description": "Create a new user. No authentication required. Sets default role as 'user' and status as 'active'."
+					},
+					"response": []
+				},
+				{
+					"name": "Update User by ID (Admin)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"John Doe Updated\",\n    \"address\": \"House 15, Road 10, Gulshan, Dhaka\",\n    \"photoURL\": \"https://i.ibb.co/updated-photo.jpg\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "6759d2a4f12ab34567890123",
+									"description": "MongoDB ObjectId of the user"
+								}
+							]
+						},
+						"description": "Update user by ID. Users can only update their own profile. Non-admin users cannot change role or status."
+					},
+					"response": []
+				},
+				{
+					"name": "Mark User as Fraud (Admin)",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/:id/fraud",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								":id",
+								"fraud"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "6759d2a4f12ab34567890123",
+									"description": "MongoDB ObjectId of the user to mark as fraud"
+								}
+							]
+						},
+						"description": "Mark a user as fraud. Admin only. Cannot mark admin as fraud."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Meals",
+			"item": [
+				{
+					"name": "Get All Meals",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/meals",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"meals"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number (default: 1)",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Items per page (default: 10)",
+									"disabled": true
+								},
+								{
+									"key": "sort",
+									"value": "price",
+									"description": "Sort field (e.g., price, rating, foodName)",
+									"disabled": true
+								},
+								{
+									"key": "order",
+									"value": "asc",
+									"description": "Sort order: asc or desc",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "",
+									"description": "Search by food name or chef name",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get all meals with pagination, sorting, and search. No authentication required."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Meal by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/meals/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"meals",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "6977081273ed92c38e5b36c0",
+									"description": "MongoDB ObjectId of the meal"
+								}
+							]
+						},
+						"description": "Get a single meal by ID. No authentication required."
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Meals",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/meals/chef",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"meals",
+								"chef"
+							]
+						},
+						"description": "Get all meals by a specific chef. Chefs can only view their own meals. Admin can view any chef's meals."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Meal (Chef)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"foodName\": \"Grilled Chicken Salad\",\n    \"foodImage\": \"https://hips.hearstapps.com/hmg-prod/images/grilled-chicken-salad-lead-6628169550105.jpg\",\n    \"price\": 12.99,\n    \"ingredients\": [\n        \"Chicken breast\",\n        \"Lettuce\",\n        \"Tomatoes\",\n        \"Cucumber\",\n        \"Olive oil\",\n        \"Lemon juice\",\n        \"Salt\",\n        \"Pepper\"\n    ],\n    \"estimatedDeliveryTime\": \"30 minutes\",\n    \"chefExperience\": \"5 years of experience in Mediterranean cuisine\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/meals",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"meals"
+							]
+						},
+						"description": "Create a new meal. Chef only. Meal is automatically linked to the authenticated chef. Fraud chefs cannot create meals."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Meal",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"foodName\": \"Updated Grilled Chicken Salad\",\n    \"price\": 14.99,\n    \"ingredients\": [\n        \"Chicken breast\",\n        \"Lettuce\",\n        \"Tomatoes\",\n        \"Cucumber\",\n        \"Feta cheese\",\n        \"Olive oil\"\n    ],\n    \"estimatedDeliveryTime\": \"35 minutes\"\n}\n"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/meals/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"meals",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "656f1a7b9f1b3c0012345678",
+									"description": "MongoDB ObjectId of the meal"
+								}
+							]
+						},
+						"description": "Update a meal. Chefs can only update their own meals. Admin can update any meal. Cannot change chefId or userEmail."
+					},
+					"response": []
+				},
+			{
+				"name": "Delete Meal",
+				"request": {
+					"method": "DELETE",
+					"header": [],
+					"url": {
+						"raw": "{{baseUrl}}/api/v1/meals/:id",
+						"host": [
+							"{{baseUrl}}"
+						],
+						"path": [
+							"api",
+							"v1",
+							"meals",
+							":id"
+						],
+						"variable": [
+							{
+								"key": "id",
+								"value": "656f1a7b9f1b3c0012345678",
+								"description": "MongoDB ObjectId of the meal"
+							}
+						]
+					},
+					"description": "Delete a meal. Chefs can only delete their own meals. Admin can delete any meal. Uses MongoDB transaction to atomically delete related reviews, favorites, orders, and payments. Rolls back all changes if any operation fails."
+				},
+				"response": []
+			}
+			]
+		},
+		{
+			"name": "Orders",
+			"item": [
+				{
+					"name": "Get All Orders (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number (default: 1)",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Items per page (default: 10)",
+									"disabled": true
+								},
+								{
+									"key": "sort",
+									"value": "orderTime",
+									"description": "Sort field (e.g., orderTime, price)",
+									"disabled": true
+								},
+								{
+									"key": "order",
+									"value": "desc",
+									"description": "Sort order: asc or desc",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "",
+									"description": "Search by meal name, user email, or user name",
+									"disabled": true
+								},
+								{
+									"key": "paymentStatus",
+									"value": "pending",
+									"description": "Filter by payment status: pending or paid",
+									"disabled": true
+								},
+								{
+									"key": "orderStatus",
+									"value": "pending",
+									"description": "Filter by order status: pending, accepted, cancelled, delivered",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get all orders with pagination, sorting, and filtering. Admin only."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Orders by User",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders/user",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"user"
+							]
+						},
+						"description": "Get all orders for the authenticated user. Sorted by order time descending."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Orders by Chef",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders/chef",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"chef"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number (default: 1)",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Items per page (default: 10)",
+									"disabled": true
+								},
+								{
+									"key": "sort",
+									"value": "orderTime",
+									"description": "Sort field (e.g., orderTime, price)",
+									"disabled": true
+								},
+								{
+									"key": "order",
+									"value": "desc",
+									"description": "Sort order: asc or desc",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "",
+									"description": "Search by meal name, user email, or user name",
+									"disabled": true
+								},
+								{
+									"key": "paymentStatus",
+									"value": "pending",
+									"description": "Filter by payment status: pending or paid",
+									"disabled": true
+								},
+								{
+									"key": "orderStatus",
+									"value": "pending",
+									"description": "Filter by order status: pending, accepted, cancelled, delivered",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get all orders for the authenticated chef's meals with pagination, sorting, and filtering. Chef only."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"foodId\": \"6977081273ed92c38e5b36c0\",\n    \"quantity\": 2,\n    \"userAddress\": \"House 12, Road 7, Mirpur DOHS, Dhaka\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders"
+							]
+						},
+						"description": "Create a new order. Order is automatically linked to the authenticated user. Fraud users cannot place orders. Required fields: foodId, quantity, userAddress."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Order Status",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"orderStatus\": \"accepted\" // \"accepted\" | \"cancelled\" | \"delivered\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "69770b380198adc688e48323",
+									"description": "MongoDB ObjectId of the order"
+								}
+							]
+						},
+						"description": "Accept an order. Chef or Admin only. Changes order status from pending to accepted."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Reviews",
+			"item": [
+				{
+					"name": "Get All Reviews",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reviews?limit=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reviews"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Number of reviews to return (default: 10)"
+								}
+							]
+						},
+						"description": "Get all reviews for home page display. No authentication required."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Reviews by Meal ID",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reviews/meal/:foodId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reviews",
+								"meal",
+								":foodId"
+							],
+							"variable": [
+								{
+									"key": "foodId",
+									"value": "6759c1f4e12ab34567890abc",
+									"description": "MongoDB ObjectId of the meal"
+								}
+							]
+						},
+						"description": "Get all reviews for a specific meal. No authentication required."
+					},
+					"response": []
+				},
+			{
+				"name": "Get My Reviews",
+				"request": {
+					"method": "GET",
+					"header": [],
+					"url": {
+						"raw": "{{baseUrl}}/api/v1/reviews/user",
+						"host": [
+							"{{baseUrl}}"
+						],
+						"path": [
+							"api",
+							"v1",
+							"reviews",
+							"user"
+						]
+					},
+					"description": "Get all reviews by the authenticated user. Returns reviews sorted by date descending."
+				},
+				"response": []
+			},
+				{
+					"name": "Create Review",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"foodId\": \"6759c1f4e12ab34567890abc\",\n    \"rating\": 5,\n    \"comment\": \"The food was delicious! Perfect taste and fast delivery.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reviews",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reviews"
+							]
+						},
+						"description": "Create a new review. Review is automatically linked to the authenticated user. Required fields: foodId, rating (1-5), comment."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Review",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"rating\": 4,\n    \"comment\": \"Updated review - The food was good but delivery was a bit late.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reviews/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reviews",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "6759d2a4f12ab34567890fff",
+									"description": "MongoDB ObjectId of the review"
+								}
+							]
+						},
+						"description": "Update a review. Users can only update their own reviews. Admin can update any review. Cannot change reviewer info."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Review",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reviews/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reviews",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "6759d2a4f12ab34567890fff",
+									"description": "MongoDB ObjectId of the review"
+								}
+							]
+						},
+						"description": "Delete a review. Users can only delete their own reviews. Admin can delete any review."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Favorites",
+			"item": [
+				{
+					"name": "Get Favorites Meal",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/favorites",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"favorites"
+							]
+						},
+						"description": "Get all favorites for a user. Users can only view their own favorites. Admin can view any user's favorites."
+					},
+					"response": []
+				},
+				{
+					"name": "Add to Favorites",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"mealId\": \"6977081273ed92c38e5b36c0\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/favorites",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"favorites"
+							]
+						},
+						"description": "Add a meal to favorites. Automatically linked to the authenticated user. Required field: mealId."
+					},
+					"response": []
+				},
+				{
+					"name": "Remove from Favorites",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/favorites/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"favorites",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "697713f4e6dcdd49f50c9c29",
+									"description": "MongoDB ObjectId of the favorite entry"
+								}
+							]
+						},
+						"description": "Remove a meal from favorites. Users can only remove their own favorites. Admin can remove any favorite."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Requests",
+			"item": [
+				{
+					"name": "Get All Requests (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/requests",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"requests"
+							]
+						},
+						"description": "Get all chef/admin requests. Admin only."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"requestType\": \"chef\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/requests",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"requests"
+							]
+						},
+						"description": "Create a request to become a chef or admin. Request is automatically linked to the authenticated user. Users cannot have multiple pending requests."
+					},
+					"response": []
+				},
+				{
+					"name": "Approve Request (Admin)",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/requests/:id/approve",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"requests",
+								":id",
+								"approve"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "697705f7ec086664103f3797",
+									"description": "MongoDB ObjectId of the request"
+								}
+							]
+						},
+						"description": "Approve a chef/admin request. Admin only. Updates user role and generates chefId for chef requests."
+					},
+					"response": []
+				},
+				{
+					"name": "Reject Request (Admin)",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/requests/:id/reject",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"requests",
+								":id",
+								"reject"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "6759f12be12ab345679845555",
+									"description": "MongoDB ObjectId of the request"
+								}
+							]
+						},
+						"description": "Reject a chef/admin request. Admin only. User role remains unchanged."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin Statistics",
+			"item": [
+				{
+					"name": "Get Admin Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/statistics",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"statistics"
+							]
+						},
+						"description": "Get dashboard statistics including total users, chefs, meals, orders, and payments. Admin only."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Payments",
+			"item": [
+				{
+					"name": "Create Payment Session",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"orderId\": \"6759f12be12ab34567890aaa\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/payments/create-session",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"payments",
+								"create-session"
+							]
+						},
+						"description": "Create a Stripe checkout session for an order. User can only pay for their own orders. Order must be accepted and payment must be pending. (Note: Currently commented out in backend)"
+					},
+					"response": []
+				},
+			{
+				"name": "Verify Payment (Callback)",
+				"request": {
+					"auth": {
+						"type": "noauth"
+					},
+					"method": "GET",
+					"header": [],
+					"url": {
+						"raw": "{{baseUrl}}/api/v1/payments/verify?session_id=cs_test_a1b2c3d4e5f6g7h8i9j0&order_id=6759f12be12ab34567890aaa",
+						"host": [
+							"{{baseUrl}}"
+						],
+						"path": [
+							"api",
+							"v1",
+							"payments",
+							"verify"
+						],
+						"query": [
+							{
+								"key": "session_id",
+								"value": "cs_test_a1b2c3d4e5f6g7h8i9j0",
+								"description": "Stripe checkout session ID"
+							},
+							{
+								"key": "order_id",
+								"value": "6759f12be12ab34567890aaa",
+								"description": "MongoDB ObjectId of the order"
+							}
+						]
+					},
+					"description": "Stripe callback endpoint for payment verification. Called automatically by Stripe after checkout. Uses MongoDB transaction to atomically update order payment status and save payment record. Redirects to success or failed page. Rolls back all changes if any operation fails."
+				},
+				"response": []
+			}
+		]
+	}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{authToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8000"
+		},
+		{
+			"key": "authToken",
+			"value": "",
+			"description": {
+				"content": "Firebase ID Token for authentication",
+				"type": "text/plain"
+			}
+		}
+	]
+}
