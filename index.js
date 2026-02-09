@@ -188,7 +188,6 @@ async function run() {
           return res.status(404).send({ message: "User not found" });
         }
 
-        // Remove sensitive fields
         const { password, ...userWithoutPassword } = user;
         res.send({ user: userWithoutPassword });
       },
