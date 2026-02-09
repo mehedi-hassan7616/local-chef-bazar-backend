@@ -205,7 +205,7 @@ async function run() {
       if (existingUser) {
         return res.send({ message: "User already exists", insertedId: null });
       }
-
+      //default value add for users and admin
       // Set default values
       const newUser = {
         ...userData,
