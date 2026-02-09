@@ -342,7 +342,6 @@ async function run() {
 
       res.send({ meals });
     });
-    //find favorate collection and rating food
     // Get meal by ID
     app.get(
       "/api/v1/meals/:id",
