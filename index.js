@@ -384,8 +384,8 @@ async function run() {
     // Create new meal (Chef only )
     app.post("/api/v1/meals", auth("chef"), async (req, res) => {
       const mealData = req.body;
-
-      // Check if chef is fraud - fraud chefs cannot create meals
+      //fraud chefs cannot create meals
+      // Check if chef is fraud
       if (req.user.status === "fraud") {
         return res.status(403).send({
           message: "Your account is marked as fraud. You cannot create meals.",
