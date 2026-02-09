@@ -160,7 +160,8 @@ async function run() {
     });
 
     // =======================
-    // 1. USERS API
+    // 1. USERS API COLLECTION
+
     // =======================
     // Get all users (Admin only)
     app.get("/api/v1/users", auth("admin"), async (req, res) => {
@@ -175,7 +176,7 @@ async function run() {
       async (req, res) => {
         const email = req.params.email;
 
-        // Check ownership: users can only get their own data
+        //  users can only get their own data
         if (req.user.role !== "admin" && req.user.email !== email) {
           return res
             .status(403)
