@@ -127,7 +127,6 @@ async function run() {
         const data = await response.json();
 
         if (!response.ok) {
-          // Handle Firebase error responses
           const errorMessage = data.error?.message || "Authentication failed";
           return res.status(401).send({
             message: errorMessage,
@@ -285,8 +284,8 @@ async function run() {
       if (search) {
         query = {
           $or: [
-            { foodName: { $regex: search, $options: "i" } },
-            { chefName: { $regex: search, $options: "i" } },
+            { foodName: { $regex: search, $options: "i " } },
+            { chefName: { $regex: search, $options: "i " } },
           ],
         };
       }
@@ -345,7 +344,7 @@ async function run() {
 
       res.send({ meals });
     });
-
+    //find favorate collection and rating food
     // Get meal by ID
     app.get(
       "/api/v1/meals/:id",
