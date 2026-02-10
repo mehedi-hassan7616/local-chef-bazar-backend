@@ -14,6 +14,9 @@ const serviceAccount = require("./firebase-adminsdk.json");
 app.use(
   cors({
     origin: ["http://localhost:3000"],
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    allowedHeaders:
+      "Content-Type, Authorization, Origin, X-Requested-With, Accept",
     credentials: true,
   }),
 );
