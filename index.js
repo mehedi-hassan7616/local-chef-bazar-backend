@@ -11,18 +11,20 @@ const port = process.env.PORT || 8000;
 
 const serviceAccount = require("./firebase-adminsdk.json");
 
-app.use(
-  cors({
-    origin: [
-      "http://localhost:3000",
-      "https://local-chef-bazar-client.vercel.app",
-    ],
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-    allowedHeaders:
-      "Content-Type, Authorization, Origin, X-Requested-With, Accept",
-    credentials: true,
-  }),
-);
+const corsOptions = {
+  origin: [
+    "http://localhost:3000",
+    "http://localhost:4173",
+    "https://local-chef-bazar-client.vercel.app",
+    "www.local-chef-bazar-client.vercel.app",
+  ],
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  allowedHeaders:
+    "Content-Type, Authorization, Origin, X-Requested-With, Accept",
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -97,7 +99,7 @@ async function run() {
     // AUTH API (Login)
     // =======================
     // Login with email and password - returns Firebase access token
-    app.post("/api/v1/auth/login", async (req, res) => {
+    app.post("/auth/login", async (req, res) => {
       try {
         const { email, password } = req.body;
 
@@ -170,14 +172,14 @@ async function run() {
 
     // =======================
     // Get all users (Admin only)
-    app.get("/api/v1/users", auth("admin"), async (req, res) => {
+    app.get("/users", auth("admin"), async (req, res) => {
       const users = await usersCollection.find().toArray();
       res.send({ users });
     });
 
     // Get current user by email (for fetching user data after login)
     app.get(
-      "/api/v1/users/email/:email",
+      "/users/email/:email",
       auth("user", "chef", "admin"),
       async (req, res) => {
         const email = req.params.email;
@@ -200,7 +202,7 @@ async function run() {
     );
 
     // Create new user
-    app.post("/api/v1/users", async (req, res) => {
+    app.post("/users", async (req, res) => {
       const userData = req.body;
 
       // Check if user already exists
@@ -225,7 +227,7 @@ async function run() {
     });
 
     // Update user by ID (only admin can update)
-    app.patch("/api/v1/users/:id", auth("admin"), async (req, res) => {
+    app.patch("/users/:id", auth("admin"), async (req, res) => {
       const id = req.params.id;
       const updateData = req.body;
 
@@ -242,7 +244,7 @@ async function run() {
     });
 
     // Mark user as fraud (Admin only)
-    app.patch("/api/v1/users/:id/fraud", auth("admin"), async (req, res) => {
+    app.patch("/users/:id/fraud", auth("admin"), async (req, res) => {
       const id = req.params.id;
 
       // Find the user
@@ -277,7 +279,7 @@ async function run() {
     // 2. MEALS API
     // =======================
     // Get all meals with pagination, sorting, and search
-    app.get("/api/v1/meals", async (req, res) => {
+    app.get("/meals", async (req, res) => {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
       const sort = req.query.sort;
@@ -329,7 +331,7 @@ async function run() {
     });
 
     // Get meals by chef (chefs can only see their own meals, admin can see all)
-    app.get("/api/v1/meals/chef", auth("chef", "admin"), async (req, res) => {
+    app.get("/meals/chef", auth("chef", "admin"), async (req, res) => {
       const meals = await mealsCollection
         .find({ chefId: req.user.chefId })
         .toArray();
@@ -349,46 +351,42 @@ async function run() {
       res.send({ meals });
     });
     // Get meal by ID
-    app.get(
-      "/api/v1/meals/:id",
-      auth("user", "chef", "admin"),
-      async (req, res) => {
-        const id = req.params.id;
-        const meal = await mealsCollection.findOne({ _id: new ObjectId(id) });
+    app.get("/meals/:id", auth("user", "chef", "admin"), async (req, res) => {
+      const id = req.params.id;
+      const meal = await mealsCollection.findOne({ _id: new ObjectId(id) });
 
-        if (!meal) {
-          return res.status(404).send({ message: "Meal not found" });
-        }
+      if (!meal) {
+        return res.status(404).send({ message: "Meal not found" });
+      }
 
-        const isFavorite = (await favoritesCollection.findOne({
-          userEmail: req.user.email,
-          mealId: id,
-        }))
-          ? true
-          : false;
+      const isFavorite = (await favoritesCollection.findOne({
+        userEmail: req.user.email,
+        mealId: id,
+      }))
+        ? true
+        : false;
 
-        const reviews = await reviewsCollection.find({ foodId: id }).toArray();
-        const averageRating =
-          reviews.length > 0
-            ? reviews.reduce((sum, review) => sum + review.rating, 0) /
-              reviews.length
-            : 0;
-        const totalReviews = reviews.length;
-        const canReview = reviews.some(
-          (review) => review.reviewerEmail === req.user.email,
-        );
+      const reviews = await reviewsCollection.find({ foodId: id }).toArray();
+      const averageRating =
+        reviews.length > 0
+          ? reviews.reduce((sum, review) => sum + review.rating, 0) /
+            reviews.length
+          : 0;
+      const totalReviews = reviews.length;
+      const canReview = reviews.some(
+        (review) => review.reviewerEmail === req.user.email,
+      );
 
-        meal.isFavorite = isFavorite;
-        meal.isReviewed = canReview;
-        meal.rating = Number(averageRating?.toFixed(1)) || 0;
-        meal.totalReviews = totalReviews;
+      meal.isFavorite = isFavorite;
+      meal.isReviewed = canReview;
+      meal.rating = Number(averageRating?.toFixed(1)) || 0;
+      meal.totalReviews = totalReviews;
 
-        res.send(meal);
-      },
-    );
+      res.send(meal);
+    });
     //  meal is automatically linked to the chef
     // Create new meal (Chef only )
-    app.post("/api/v1/meals", auth("chef"), async (req, res) => {
+    app.post("/meals", auth("chef"), async (req, res) => {
       const mealData = req.body;
       //fraud chefs cannot create meals
       // Check if chef is fraud
@@ -426,7 +424,7 @@ async function run() {
     });
 
     // Update meal (chefs can only update their own meals, admin can update any)
-    app.patch("/api/v1/meals/:id", auth("chef", "admin"), async (req, res) => {
+    app.patch("/meals/:id", auth("chef", "admin"), async (req, res) => {
       const id = req.params.id;
       const updateData = req.body;
 
@@ -456,7 +454,7 @@ async function run() {
     });
 
     // Delete meal (chefs can only delete their own meals, admin can delete any)
-    app.delete("/api/v1/meals/:id", auth("chef", "admin"), async (req, res) => {
+    app.delete("/meals/:id", auth("chef", "admin"), async (req, res) => {
       const id = req.params.id;
 
       // Find the meal first to check ownership
@@ -523,7 +521,7 @@ async function run() {
     // 3. ORDERS API
     // =======================
     // Get all orders (admin can see all orders)
-    app.get("/api/v1/orders", auth("admin"), async (req, res) => {
+    app.get("/orders", auth("admin"), async (req, res) => {
       const page = parseInt(req.query?.page) || 1;
       const limit = parseInt(req.query?.limit) || 10;
       const sort = req.query?.sort;
@@ -569,20 +567,16 @@ async function run() {
 
     // Get orders by user \
     //(users can only see their own orders)
-    app.get(
-      "/api/v1/orders/user",
-      auth("user", "chef", "admin"),
-      async (req, res) => {
-        const orders = await ordersCollection
-          .find({ userEmail: req.user?.email })
-          .sort({ orderTime: -1 })
-          .toArray();
-        res.send({ orders });
-      },
-    );
+    app.get("/orders/user", auth("user", "chef", "admin"), async (req, res) => {
+      const orders = await ordersCollection
+        .find({ userEmail: req.user?.email })
+        .sort({ orderTime: -1 })
+        .toArray();
+      res.send({ orders });
+    });
 
     // Get orders by chef (chefs can only see orders for their meals)
-    app.get("/api/v1/orders/chef", auth("chef"), async (req, res) => {
+    app.get("/orders/chef", auth("chef"), async (req, res) => {
       const page = parseInt(req.query?.page) || 1;
       const limit = parseInt(req.query?.limit) || 10;
       const sort = req.query?.sort;
@@ -629,62 +623,53 @@ async function run() {
     });
 
     // Create new order (order is automatically linked to the authenticated user)
-    app.post(
-      "/api/v1/orders",
-      auth("user", "chef", "admin"),
-      async (req, res) => {
-        const orderData = req.body;
+    app.post("/orders", auth("user", "chef", "admin"), async (req, res) => {
+      const orderData = req.body;
 
-        // Check if user is fraud - fraud users cannot place orders
-        if (req.user.status === "fraud") {
-          return res.status(403).send({
-            message:
-              "Your account is marked as fraud. You cannot place orders.",
-          });
-        }
-
-        // Validate required fields
-        if (
-          !orderData.foodId ||
-          !orderData.quantity ||
-          !orderData.userAddress
-        ) {
-          return res.status(400).send({
-            message: "Missing required fields: foodId, quantity, userAddress",
-          });
-        }
-
-        // Get meal details to fill order data
-        const meal = await mealsCollection.findOne({
-          _id: new ObjectId(orderData.foodId),
+      // Check if user is fraud - fraud users cannot place orders
+      if (req.user.status === "fraud") {
+        return res.status(403).send({
+          message: "Your account is marked as fraud. You cannot place orders.",
         });
-        if (!meal) {
-          return res.status(404).send({ message: "Meal not found" });
-        }
+      }
 
-        // Create order with auto-filled data from meal and user
-        const newOrder = {
-          foodId: orderData.foodId,
-          mealName: meal.foodName,
-          price: meal.price,
-          quantity: parseInt(orderData.quantity),
-          chefId: meal.chefId,
-          chefName: meal.chefName,
-          userEmail: req.user.email,
-          userName: req.user.name,
-          userAddress: orderData.userAddress,
-          orderStatus: "pending",
-          paymentStatus: "pending",
-          orderTime: new Date().toISOString(),
-        };
+      // Validate required fields
+      if (!orderData.foodId || !orderData.quantity || !orderData.userAddress) {
+        return res.status(400).send({
+          message: "Missing required fields: foodId, quantity, userAddress",
+        });
+      }
 
-        const result = await ordersCollection.insertOne(newOrder);
-        res.send(result);
-      },
-    );
+      // Get meal details to fill order data
+      const meal = await mealsCollection.findOne({
+        _id: new ObjectId(orderData.foodId),
+      });
+      if (!meal) {
+        return res.status(404).send({ message: "Meal not found" });
+      }
+
+      // Create order with auto-filled data from meal and user
+      const newOrder = {
+        foodId: orderData.foodId,
+        mealName: meal.foodName,
+        price: meal.price,
+        quantity: parseInt(orderData.quantity),
+        chefId: meal.chefId,
+        chefName: meal.chefName,
+        userEmail: req.user.email,
+        userName: req.user.name,
+        userAddress: orderData.userAddress,
+        orderStatus: "pending",
+        paymentStatus: "pending",
+        orderTime: new Date().toISOString(),
+      };
+
+      const result = await ordersCollection.insertOne(newOrder);
+      res.send(result);
+    });
 
     // Update order status (only chef who owns the meal or admin can update)
-    app.patch("/api/v1/orders/:id", auth("chef", "admin"), async (req, res) => {
+    app.patch("/orders/:id", auth("chef", "admin"), async (req, res) => {
       const id = req.params.id;
       const { orderStatus } = req?.body;
 
@@ -737,7 +722,7 @@ async function run() {
     // 4. REVIEWS API
     // =======================
     // Get all reviews (for home page)
-    app.get("/api/v1/reviews", async (req, res) => {
+    app.get("/reviews", async (req, res) => {
       const limit = parseInt(req.query.limit) || 10;
       const reviews = await reviewsCollection
         .find({
@@ -750,7 +735,7 @@ async function run() {
     });
 
     // Get reviews by food ID
-    app.get("/api/v1/reviews/meal/:foodId", async (req, res) => {
+    app.get("/reviews/meal/:foodId", async (req, res) => {
       const foodId = req.params.foodId;
       const reviews = await reviewsCollection
         .find({ foodId })
@@ -761,7 +746,7 @@ async function run() {
 
     // Get reviews by user email (users can only see their own reviews)
     app.get(
-      "/api/v1/reviews/user",
+      "/reviews/user",
       auth("user", "chef", "admin"),
       async (req, res) => {
         const reviews = await reviewsCollection
@@ -773,65 +758,61 @@ async function run() {
     );
 
     // Create review (review is automatically linked to the authenticated user)
-    app.post(
-      "/api/v1/reviews",
-      auth("user", "chef", "admin"),
-      async (req, res) => {
-        const reviewData = req.body;
+    app.post("/reviews", auth("user", "chef", "admin"), async (req, res) => {
+      const reviewData = req.body;
 
-        // Validate required fields
-        if (!reviewData.foodId || !reviewData.rating || !reviewData.comment) {
-          return res.status(400).send({
-            message: "Missing required fields: foodId, rating, comment",
-          });
-        }
-
-        // Get meal details to include meal name
-        const meal = await mealsCollection.findOne({
-          _id: new ObjectId(reviewData.foodId),
+      // Validate required fields
+      if (!reviewData.foodId || !reviewData.rating || !reviewData.comment) {
+        return res.status(400).send({
+          message: "Missing required fields: foodId, rating, comment",
         });
-        if (!meal) {
-          return res.status(404).send({ message: "Meal not found" });
-        }
+      }
 
-        const isMyMeal = meal.chefId === req.user.chefId;
+      // Get meal details to include meal name
+      const meal = await mealsCollection.findOne({
+        _id: new ObjectId(reviewData.foodId),
+      });
+      if (!meal) {
+        return res.status(404).send({ message: "Meal not found" });
+      }
 
-        if (isMyMeal) {
-          return res
-            .status(400)
-            .send({ message: "You cannot review your own meal" });
-        }
+      const isMyMeal = meal.chefId === req.user.chefId;
 
-        const existingReview = await reviewsCollection.findOne({
-          foodId: reviewData.foodId,
-          reviewerEmail: req.user.email,
-        });
-        if (existingReview) {
-          return res
-            .status(400)
-            .send({ message: "You have already reviewed this meal" });
-        }
+      if (isMyMeal) {
+        return res
+          .status(400)
+          .send({ message: "You cannot review your own meal" });
+      }
 
-        // Force reviewer info to be the authenticated user
-        const newReview = {
-          foodId: reviewData.foodId,
-          mealName: meal.foodName,
-          rating: parseInt(reviewData.rating),
-          comment: reviewData.comment,
-          reviewerEmail: req.user.email,
-          reviewerName: req.user.name || req.user.displayName,
-          reviewerImage: req.user.photoURL || req.user.photo || req.user.image,
-          date: new Date().toISOString(),
-        };
+      const existingReview = await reviewsCollection.findOne({
+        foodId: reviewData.foodId,
+        reviewerEmail: req.user.email,
+      });
+      if (existingReview) {
+        return res
+          .status(400)
+          .send({ message: "You have already reviewed this meal" });
+      }
 
-        const result = await reviewsCollection.insertOne(newReview);
-        res.send(result);
-      },
-    );
+      // Force reviewer info to be the authenticated user
+      const newReview = {
+        foodId: reviewData.foodId,
+        mealName: meal.foodName,
+        rating: parseInt(reviewData.rating),
+        comment: reviewData.comment,
+        reviewerEmail: req.user.email,
+        reviewerName: req.user.name || req.user.displayName,
+        reviewerImage: req.user.photoURL || req.user.photo || req.user.image,
+        date: new Date().toISOString(),
+      };
+
+      const result = await reviewsCollection.insertOne(newReview);
+      res.send(result);
+    });
 
     // Update review (users can only update their own reviews)
     app.patch(
-      "/api/v1/reviews/:id",
+      "/reviews/:id",
       auth("user", "chef", "admin"),
       async (req, res) => {
         const id = req.params.id;
@@ -870,7 +851,7 @@ async function run() {
 
     // Delete review (users can only delete their own reviews)
     app.delete(
-      "/api/v1/reviews/:id",
+      "/reviews/:id",
       auth("user", "chef", "admin"),
       async (req, res) => {
         const id = req.params.id;
@@ -904,71 +885,63 @@ async function run() {
     // 5. FAVORITES API
     // =======================
     // Get favorites meals (users can only see their own favorites)
-    app.get(
-      "/api/v1/favorites",
-      auth("user", "chef", "admin"),
-      async (req, res) => {
-        const favorites = await favoritesCollection
-          .find({ userEmail: req.user.email })
-          .sort({ addedTime: -1 })
-          .toArray();
-        res.send({ favorites });
-      },
-    );
+    app.get("/favorites", auth("user", "chef", "admin"), async (req, res) => {
+      const favorites = await favoritesCollection
+        .find({ userEmail: req.user.email })
+        .sort({ addedTime: -1 })
+        .toArray();
+      res.send({ favorites });
+    });
 
     // Add to favorites (favorites are automatically linked to the authenticated user)
-    app.post(
-      "/api/v1/favorites",
-      auth("user", "chef", "admin"),
-      async (req, res) => {
-        const { mealId } = req.body;
+    app.post("/favorites", auth("user", "chef", "admin"), async (req, res) => {
+      const { mealId } = req.body;
 
-        // Validate required field
-        if (!mealId) {
-          return res
-            .status(400)
-            .send({ message: "Missing required field: mealId" });
-        }
+      // Validate required field
+      if (!mealId) {
+        return res
+          .status(400)
+          .send({ message: "Missing required field: mealId" });
+      }
 
-        // Check if already in favorites
-        const exists = await favoritesCollection.findOne({
-          userEmail: req.user.email,
-          mealId: mealId,
-        });
+      // Check if already in favorites
+      const exists = await favoritesCollection.findOne({
+        userEmail: req.user.email,
+        mealId: mealId,
+      });
 
-        if (exists) {
-          return res
-            .status(400)
-            .send({ message: "This meal is already in your favorites" });
-        }
+      if (exists) {
+        return res
+          .status(400)
+          .send({ message: "This meal is already in your favorites" });
+      }
 
-        // Get meal details to include in favorite
-        const meal = await mealsCollection.findOne({
-          _id: new ObjectId(mealId),
-        });
-        if (!meal) {
-          return res.status(404).send({ message: "Meal not found" });
-        }
+      // Get meal details to include in favorite
+      const meal = await mealsCollection.findOne({
+        _id: new ObjectId(mealId),
+      });
+      if (!meal) {
+        return res.status(404).send({ message: "Meal not found" });
+      }
 
-        // Create favorite with required data structure
-        const newFavorite = {
-          userEmail: req.user.email,
-          mealId: mealId,
-          mealName: meal.foodName,
-          chefId: meal.chefId,
-          chefName: meal.chefName,
-          price: meal.price,
-          addedTime: new Date().toISOString(),
-        };
+      // Create favorite with required data structure
+      const newFavorite = {
+        userEmail: req.user.email,
+        mealId: mealId,
+        mealName: meal.foodName,
+        chefId: meal.chefId,
+        chefName: meal.chefName,
+        price: meal.price,
+        addedTime: new Date().toISOString(),
+      };
 
-        const result = await favoritesCollection.insertOne(newFavorite);
-        res.send(result);
-      },
-    );
+      const result = await favoritesCollection.insertOne(newFavorite);
+      res.send(result);
+    });
 
     // Remove from favorites (users can only remove their own favorites)
     app.delete(
-      "/api/v1/favorites/:id",
+      "/favorites/:id",
       auth("user", "chef", "admin"),
       async (req, res) => {
         const id = req.params.id;
@@ -1002,7 +975,7 @@ async function run() {
     // 6. REQUESTS API (Chef/Admin requests)
     // =======================
     // Get all requests (Admin only)
-    app.get("/api/v1/requests", auth("admin"), async (req, res) => {
+    app.get("/requests", auth("admin"), async (req, res) => {
       const requests = await requestsCollection
         .find()
         .sort({ requestTime: -1 })
@@ -1011,139 +984,127 @@ async function run() {
     });
 
     // Create request (request is automatically linked to the authenticated user)
-    app.post(
-      "/api/v1/requests",
-      auth("user", "chef", "admin"),
-      async (req, res) => {
-        const requestData = req.body;
+    app.post("/requests", auth("user", "chef", "admin"), async (req, res) => {
+      const requestData = req.body;
 
-        // Force userEmail to be the authenticated user's email
-        const newRequest = {
-          ...requestData,
-          userEmail: req.user.email,
-          userName: req.user.name,
-          requestTime: new Date().toISOString(),
-          requestStatus: "pending",
-        };
+      // Force userEmail to be the authenticated user's email
+      const newRequest = {
+        ...requestData,
+        userEmail: req.user.email,
+        userName: req.user.name,
+        requestTime: new Date().toISOString(),
+        requestStatus: "pending",
+      };
 
-        // Check if user already has a pending request
-        const existingRequest = await requestsCollection.findOne({
-          userEmail: req.user.email,
-          requestStatus: "pending",
-        });
+      // Check if user already has a pending request
+      const existingRequest = await requestsCollection.findOne({
+        userEmail: req.user.email,
+        requestStatus: "pending",
+      });
 
-        if (existingRequest) {
-          return res
-            .status(400)
-            .send({ message: "You already have a pending request" });
-        }
+      if (existingRequest) {
+        return res
+          .status(400)
+          .send({ message: "You already have a pending request" });
+      }
 
-        const result = await requestsCollection.insertOne(newRequest);
-        res.send(result);
-      },
-    );
+      const result = await requestsCollection.insertOne(newRequest);
+      res.send(result);
+    });
 
     // Approve request (Admin only) - handles both chef and admin requests
-    app.patch(
-      "/api/v1/requests/:id/approve",
-      auth("admin"),
-      async (req, res) => {
-        const id = req.params.id;
+    app.patch("/requests/:id/approve", auth("admin"), async (req, res) => {
+      const id = req.params.id;
 
-        // Find the request
-        const request = await requestsCollection.findOne({
-          _id: new ObjectId(id),
-        });
-        if (!request) {
-          return res.status(404).send({ message: "Request not found" });
-        }
+      // Find the request
+      const request = await requestsCollection.findOne({
+        _id: new ObjectId(id),
+      });
+      if (!request) {
+        return res.status(404).send({ message: "Request not found" });
+      }
 
-        // Check if already processed
-        if (request.requestStatus !== "pending") {
-          return res
-            .status(400)
-            .send({ message: "This request has already been processed" });
-        }
+      // Check if already processed
+      if (request.requestStatus !== "pending") {
+        return res
+          .status(400)
+          .send({ message: "This request has already been processed" });
+      }
 
-        // Find the user who made the request
-        const user = await usersCollection.findOne({
-          email: request.userEmail,
-        });
-        if (!user) {
-          return res.status(404).send({ message: "User not found" });
-        }
+      // Find the user who made the request
+      const user = await usersCollection.findOne({
+        email: request.userEmail,
+      });
+      if (!user) {
+        return res.status(404).send({ message: "User not found" });
+      }
 
-        // Prepare user update based on request type
-        let userUpdate = {};
+      // Prepare user update based on request type
+      let userUpdate = {};
 
-        if (request.requestType === "chef") {
-          // Generate unique ChefId: "chef-" + random 4-digit number
-          const chefId = `chef-${Math.floor(1000 + Math.random() * 9000)}`;
-          userUpdate = {
-            role: "chef",
-            chefId: chefId,
-          };
-        } else if (request.requestType === "admin") {
-          userUpdate = {
-            role: "admin",
-          };
-        }
+      if (request.requestType === "chef") {
+        // Generate unique ChefId: "chef-" + random 4-digit number
+        const chefId = `chef-${Math.floor(1000 + Math.random() * 9000)}`;
+        userUpdate = {
+          role: "chef",
+          chefId: chefId,
+        };
+      } else if (request.requestType === "admin") {
+        userUpdate = {
+          role: "admin",
+        };
+      }
 
-        // Update user role and chefId (if chef)
-        await usersCollection.updateOne(
-          { email: request.userEmail },
-          { $set: userUpdate },
-        );
+      // Update user role and chefId (if chef)
+      await usersCollection.updateOne(
+        { email: request.userEmail },
+        { $set: userUpdate },
+      );
 
-        // Update request status to approved
-        await requestsCollection.updateOne(
-          { _id: new ObjectId(id) },
-          { $set: { requestStatus: "approved" } },
-        );
+      // Update request status to approved
+      await requestsCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { requestStatus: "approved" } },
+      );
 
-        res.send({
-          message: `Request approved. User is now a ${request.requestType}.`,
-          ...(request.requestType === "chef" && { chefId: userUpdate.chefId }),
-        });
-      },
-    );
+      res.send({
+        message: `Request approved. User is now a ${request.requestType}.`,
+        ...(request.requestType === "chef" && { chefId: userUpdate.chefId }),
+      });
+    });
 
     // Reject request (Admin only)
-    app.patch(
-      "/api/v1/requests/:id/reject",
-      auth("admin"),
-      async (req, res) => {
-        const id = req.params.id;
+    app.patch("/requests/:id/reject", auth("admin"), async (req, res) => {
+      const id = req.params.id;
 
-        // Find the request
-        const request = await requestsCollection.findOne({
-          _id: new ObjectId(id),
-        });
-        if (!request) {
-          return res.status(404).send({ message: "Request not found" });
-        }
+      // Find the request
+      const request = await requestsCollection.findOne({
+        _id: new ObjectId(id),
+      });
+      if (!request) {
+        return res.status(404).send({ message: "Request not found" });
+      }
 
-        // Check if already processed
-        if (request.requestStatus !== "pending") {
-          return res
-            .status(400)
-            .send({ message: "This request has already been processed" });
-        }
+      // Check if already processed
+      if (request.requestStatus !== "pending") {
+        return res
+          .status(400)
+          .send({ message: "This request has already been processed" });
+      }
 
-        // Update request status to rejected (user role does NOT change)
-        await requestsCollection.updateOne(
-          { _id: new ObjectId(id) },
-          { $set: { requestStatus: "rejected" } },
-        );
+      // Update request status to rejected (user role does NOT change)
+      await requestsCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { requestStatus: "rejected" } },
+      );
 
-        res.send({ message: "Request rejected." });
-      },
-    );
+      res.send({ message: "Request rejected." });
+    });
 
     // =======================
     // 7. ADMIN STATISTICS API
     // =======================
-    app.get("/api/v1/admin/statistics", auth("admin"), async (req, res) => {
+    app.get("/admin/statistics", auth("admin"), async (req, res) => {
       const totalUsers = await usersCollection.countDocuments();
       const totalChefs = await usersCollection.countDocuments({ role: "chef" });
       const totalMeals = await mealsCollection.countDocuments();
@@ -1177,7 +1138,7 @@ async function run() {
     // =======================
     // Create Stripe checkout session
     app.post(
-      "/api/v1/payments/create-session",
+      "/payments/create-session",
       auth("user", "chef", "admin"),
       async (req, res) => {
         try {
@@ -1222,7 +1183,7 @@ async function run() {
               },
             ],
             mode: "payment",
-            success_url: `${process.env.SERVER_URL}/api/v1/payments/verify?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
+            success_url: `${process.env.SERVER_URL}/payments/verify?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
             cancel_url: `${process.env.CLIENT_URL}/dashboard/my-orders?payment=cancelled`,
             metadata: {
               orderId: orderId,
@@ -1241,7 +1202,7 @@ async function run() {
     );
 
     // Verify payment and redirect to appropriate URL
-    app.get("/api/v1/payments/verify", async (req, res) => {
+    app.get("/payments/verify", async (req, res) => {
       const successUrl = `${process.env.CLIENT_URL}/payment-success`;
       const failedUrl = `${process.env.CLIENT_URL}/payment-failed`;
 
