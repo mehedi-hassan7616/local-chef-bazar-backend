@@ -13,7 +13,10 @@ const serviceAccount = require("./firebase-adminsdk.json");
 
 app.use(
   cors({
-    origin: ["http://localhost:3000"],
+    origin: [
+      "http://localhost:3000",
+      "https://local-chef-bazar-client.vercel.app",
+    ],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     allowedHeaders:
       "Content-Type, Authorization, Origin, X-Requested-With, Accept",
